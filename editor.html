@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>程式碼快速編輯器</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    font-family:Arial,sans-serif;
+}
+
+.toolbar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px;
+    background:#f3f4f6;
+    border-bottom:1px solid #ddd;
+}
+
+.toolbar select,
+.toolbar button{
+    padding:8px 12px;
+    border:1px solid #ccc;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+.toolbar button{
+    background:#2563eb;
+    color:white;
+    border:none;
+}
+
+.toolbar button:hover{
+    background:#1d4ed8;
+}
+
+.container{
+    flex:1;
+    display:grid;
+    grid-template-columns: 1fr 260px;
+    overflow:hidden;
+}
+
+#editor{
+    height:100%;
+}
+
+.sidebar{
+    border-left:1px solid #ddd;
+    padding:15px;
+    overflow-y:auto;
+    background:#fafafa;
+}
+
+.sidebar h3{
+    margin-bottom:10px;
+}
+
+.snippet-btn{
+    width:100%;
+    margin-bottom:8px;
+    padding:10px;
+    border:none;
+    border-radius:6px;
+    background:#e5e7eb;
+    cursor:pointer;
+    text-align:left;
+}
+
+.snippet-btn:hover{
+    background:#d1d5db;
+}
+</style>
+</head>
+
+<body>
+
+<div class="toolbar">
+    <label>語言：</label>
+
+    <select id="languageSelect">
+        <option value="lua">Lua</option>
+        <option value="javascript">JavaScript</option>
+        <option value="python">Python</option>
+    </select>
+
+    <button id="copyBtn">
+        📋 複製全部程式碼
+    </button>
+
+    <button id="downloadBtn">
+        💾 下載程式碼
+    </button>
+</div>
+
+<div class="container">
+
+    <div id="editor"></div>
+
+    <div class="sidebar">
+
+        <h3>快速語法</h3>
+        <div id="snippetContainer"></div>
+
+    </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
+
+<script>
+
+let editor;
+
+require.config({
+    paths:{
+        vs:"https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs"
+    }
+});
+
+require(["vs/editor/editor.main"],function(){
+
+    editor = monaco.editor.create(
+        document.getElementById("editor"),
+        {
+            value:"-- 開始撰寫程式...",
+            language:"lua",
+            theme:"vs-dark",
+            automaticLayout:true,
+            fontSize:16
+        }
+    );
+
+});
+
+const languageSelect = document.getElementById("languageSelect");
+
+languageSelect.addEventListener("change",()=>{
+
+    monaco.editor.setModelLanguage(
+        editor.getModel(),
+        languageSelect.value
+    );
+
+    renderSnippetButtons();
+
+});
+
+const snippets = {
+
+javascript:{
+
+for:
+`for(let i = 0; i < 10; i++){
+    
+}
+`,
+
+while:
+`while(condition){
+    
+}
+`,
+
+if:
+`if(condition){
+    
+}
+`,
+
+ifelse:
+`if(condition){
+
+}else{
+
+}
+`,
+
+function:
+`function myFunction(){
+
+}
+`,
+
+class:
+`class MyClass{
+
+    constructor(){
+
+    }
+
+}
+`
+},
+
+python:{
+
+for:
+`for i in range(10):
+    pass
+`,
+
+while:
+`while condition:
+    pass
+`,
+
+if:
+`if condition:
+    pass
+`,
+
+ifelse:
+`if condition:
+    pass
+else:
+    pass
+`,
+
+function:
+`def my_function():
+    pass
+`,
+
+class:
+`class MyClass:
+
+    def __init__(self):
+        pass
+`
+},
+
+lua:{
+
+for:
+`for i = 1, 10 do
+
+end
+`,
+
+while:
+`while i>0 do
+
+end
+`,
+
+if:
+`if a==1 then
+
+end
+`,
+
+ifelse:
+`if a==1 then
+
+else
+
+end
+`,
+
+function:
+`function myFunction()
+
+end
+`,
+print:
+`print("hi")
+`,
+'Player.moveForward()':
+`Player.moveForward()
+`,
+'Player.turnLeft()':
+`Player.turnLeft()
+`,
+'Player.turnRight()':
+`Player.turnRight()
+`,
+'Player.interact()':
+`Player.interact()
+`,
+'Player.lookAhead':
+`Player.lookAhead()
+`
+}
+
+};
+
+function insertAtCursor(text){
+
+    const selection = editor.getSelection();
+
+    editor.executeEdits("",[
+        {
+            range:selection,
+            text:text,
+            forceMoveMarkers:true
+        }
+    ]);
+
+    editor.focus();
+}
+
+const snippetLabels = {
+    for:"for 重複",
+    while:"while 重複",
+    if:"if i==?",
+    ifelse:"if .. else .."
+};
+
+function renderSnippetButtons(){
+
+    const container = 
+        document.getElementById("snippetContainer");
+    
+    container.innerHTML = "";
+    
+    const lang = languageSelect.value;
+    const langSnippets = snippets[lang];
+
+    for(const type in langSnippets){
+
+        const btn = 
+            document.createElement("button");
+        
+        btn.className = "snippet-btn";
+        btn.dataset.type = type;
+        btn.textContent = snippetLabels[type] || type;
+
+        btn.addEventListener("click",()=>{
+
+            insertAtCursor(
+                snippets[lang][type]
+            );
+
+        });
+
+        container.appendChild(btn);
+
+    }
+
+}
+
+renderSnippetButtons();
+
+document
+.getElementById("copyBtn")
+.addEventListener("click",async()=>{
+
+    try{
+
+        await navigator.clipboard.writeText(
+            editor.getValue()
+        );
+
+        const btn =
+            document.getElementById("copyBtn");
+
+        btn.textContent="✅ 已複製";
+
+        setTimeout(()=>{
+            btn.textContent=
+            "📋 複製全部程式碼";
+        },1500);
+
+    }catch(err){
+
+        alert("複製失敗");
+
+    }
+
+});
+
+document
+.getElementById("downloadBtn")
+.addEventListener("click",()=>{
+
+    const lang = languageSelect.value;
+
+    let ext = "txt";
+
+    if(lang==="javascript") ext="js";
+    if(lang==="python") ext="py";
+    if(lang==="lua") ext="lua";
+
+    const blob = new Blob(
+        [editor.getValue()],
+        {type:"text/plain"}
+    );
+
+    const a =
+        document.createElement("a");
+
+    a.href =
+        URL.createObjectURL(blob);
+
+    a.download =
+        "code."+ext;
+
+    a.click();
+
+});
+
+</script>
+
+</body>
+</html>
