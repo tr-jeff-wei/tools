@@ -103,6 +103,14 @@ body{
     <button id="downloadBtn">
         💾 下載程式碼
     </button>
+
+    <button id="clearBtn" onclick="editor.setValue('')">
+        🗑️ 清空編輯器
+    </button>
+
+    <a href="https://pythontutor.com/visualize.html" target="_blank" style="margin-left:auto; text-decoration:none; color:#2563eb; font-weight:bold;">
+        🐍 Python Tutor 測試執行
+    </a>
 </div>
 
 <div class="container">
@@ -214,6 +222,8 @@ python:{
 'int() 轉數字':`int(?)
 `,
 "print(f'') 輸出":`print(f'xx{?}')
+`,
+"print(f'') 輸出不換行":`print(f'xx{?}' , end="")
 `,
 '---------':``,
 for:
