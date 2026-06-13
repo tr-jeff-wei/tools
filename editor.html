@@ -214,23 +214,30 @@ class:
 },
 
 python:{
-
 'input() 輸入':`a = input()
 `,
 'split() 切割':`.split()
-`,
-'int() 轉數字':`int(?)
 `,
 "print(f'') 輸出":`print(f'xx{?}')
 `,
 "print(f'') 輸出不換行":`print(f'xx{?}' , end="")
 `,
+'int() 轉數字':`int(?)`,
+'abs() 絕對值':`abs(?)`,
+'len() 長度':`len(?)`,
+'?=[] 建立清單':`? = []
+`,
+'?.append(?) 添加元素':`?.append(?)
+`,
 '---------':``,
 for:
 `for i in range(10):
-    pass
+pass
 `,
-
+'for 每一個':`
+for item in ?:
+    pass
+`,    
 while:
 `while condition:
     pass
@@ -346,7 +353,7 @@ function insertAtCursor(text){
 const snippetLabels = {
     for:"for 重複",
     while:"while 重複",
-    if:"if i==?",
+    if:"if ..",
     ifelse:"if .. else .."
 };
 
