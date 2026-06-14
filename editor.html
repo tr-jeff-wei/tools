@@ -46,10 +46,23 @@ body{
     background:#1d4ed8;
 }
 
+.toolbar .greyBtn{
+    padding:8px 12px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    background:#9ca3af;
+    color:white;
+}
+.toolbar .greyBtn:hover{
+    background:#6b7280;
+}
+
+
 .container{
     flex:1;
     display:grid;
-    grid-template-columns: 1fr 260px;
+    grid-template-columns: 2fr 1fr;
     overflow:hidden;
 }
 
@@ -59,13 +72,55 @@ body{
 
 .sidebar{
     border-left:1px solid #ddd;
-    padding:15px;
-    overflow-y:auto;
+    padding:0;
+    overflow:hidden;
     background:#fafafa;
+    display:flex;
+    flex-direction:column;
 }
 
 .sidebar h3{
-    margin-bottom:10px;
+    margin-bottom:0;
+}
+
+.tabs{
+    display:flex;
+    border-bottom:1px solid #ddd;
+    background:#f3f4f6;
+}
+
+.tab{
+    flex:1;
+    padding:12px;
+    border:none;
+    background:transparent;
+    cursor:pointer;
+    text-align:center;
+    font-size:14px;
+    border-bottom:3px solid transparent;
+    transition:all 0.2s;
+}
+
+.tab:hover{
+    background:#e5e7eb;
+}
+
+.tab.active{
+    background:#fafafa;
+    border-bottom-color:#2563eb;
+    color:#2563eb;
+    font-weight:bold;
+}
+
+.tab-content{
+    display:none;
+    padding:15px;
+    overflow-y:auto;
+    flex:1;
+}
+
+.tab-content.active{
+    display:block;
 }
 
 .snippet-btn{
@@ -95,7 +150,14 @@ body{
         <option value="javascript">JavaScript</option>
         <option value="python">Python</option>
     </select>
-
+    
+    <button class="greyBtn" id="undoBtn" onclick="editor.trigger('','undo',null)">
+        ↩️ 復原
+    </button>
+    <button class="greyBtn" id="redoBtn" onclick="editor.trigger('','redo',null)">
+        ↪️ 重做
+    </button>
+    
     <button id="copyBtn">
         📋 複製全部程式碼
     </button>
@@ -107,7 +169,6 @@ body{
     <button id="clearBtn" onclick="editor.setValue('')">
         🗑️ 清空編輯器
     </button>
-
     <a href="https://pythontutor.com/visualize.html" target="_blank" style="margin-left:auto; text-decoration:none; color:#2563eb; font-weight:bold;">
         🐍 Python Tutor 測試執行
     </a>
@@ -118,10 +179,16 @@ body{
     <div id="editor"></div>
 
     <div class="sidebar">
-
-        <h3>快速語法</h3>
-        <div id="snippetContainer"></div>
-
+        <div class="tabs">
+            <button class="tab" data-category="flow">流程控制</button>
+            <button class="tab" data-category="func">常用功能</button>
+            <button class="tab" data-category="data">其他</button>
+            <button class="tab active" data-category="all">全部</button>
+        </div>
+        <div class="tab-content active" id="tab-all"></div>
+        <div class="tab-content" id="tab-flow"></div>
+        <div class="tab-content" id="tab-func"></div>
+        <div class="tab-content" id="tab-data"></div>
     </div>
 
 </div>
@@ -313,10 +380,10 @@ print:
 'Player.turnRight()':
 `Player.turnRight()
 `,
-'Player.interact()':
+'Player.interact() 互動':
 `Player.interact()
 `,
-'Player.lookAhead()':
+'Player.lookAhead() 偵測前方':
 `Player.lookAhead()
 `,
 '?.IsBlocked==?':
@@ -357,38 +424,99 @@ const snippetLabels = {
     ifelse:"if .. else .."
 };
 
+// 分類映射
+const categoryMap = {
+    // 程式控制
+    for: 'flow',
+    while: 'flow',
+    if: 'flow',
+    ifelse: 'flow',
+    // 常用函式功能
+    input: 'func',
+    split: 'func',
+    print: 'func',
+    function: 'func',
+    class: 'func',
+    def: 'func',
+    append: 'func',
+    len: 'func',
+    'int(': 'func',
+    abs: 'func',
+    // 其他
+    Player:'data',
+    Object:'data',
+    Floor:'data',
+    Position:'data',
+    isBlocked:'data',
+    Lilacs:'data',
+    Mushroom:'data'
+};
+
+function getCategoryForSnippet(key, lang) {
+    // 先檢查 key 是否在分類映射中
+    for (let mapKey in categoryMap) {
+        if (key.includes(mapKey)) {
+            return categoryMap[mapKey];
+        }
+    }
+        
+    return 'all';
+}
+
 function renderSnippetButtons(){
 
-    const container = 
-        document.getElementById("snippetContainer");
-    
-    container.innerHTML = "";
-    
     const lang = languageSelect.value;
     const langSnippets = snippets[lang];
+    
+    // 清空所有 tab 內容
+    document.getElementById('tab-all').innerHTML = '';
+    document.getElementById('tab-flow').innerHTML = '';
+    document.getElementById('tab-func').innerHTML = '';
+    document.getElementById('tab-data').innerHTML = '';
 
     for(const type in langSnippets){
 
-        const btn = 
-            document.createElement("button");
-        
+        const btn = document.createElement("button");
         btn.className = "snippet-btn";
         btn.dataset.type = type;
         btn.textContent = snippetLabels[type] || type;
 
         btn.addEventListener("click",()=>{
-
-            insertAtCursor(
-                snippets[lang][type]
-            );
-
+            insertAtCursor(langSnippets[type]);
         });
 
-        container.appendChild(btn);
+        // 確定分類
+        const category = getCategoryForSnippet(type, lang);
+        
+        // 添加到 "全部" tab
+        document.getElementById('tab-all').appendChild(btn.cloneNode(true));
+        
+        // 添加到對應分類 tab
+        if (category !== 'all') {
+            const clonedBtn = btn.cloneNode(true);
+            clonedBtn.addEventListener("click",()=>{
+                insertAtCursor(langSnippets[type]);
+            });
+            document.getElementById(`tab-${category}`).appendChild(clonedBtn);
+        }
 
     }
 
 }
+
+// Tab 切換事件
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        // 移除所有 active 狀態
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+        
+        // 添加 active 狀態
+        tab.classList.add('active');
+        const category = tab.dataset.category;
+        document.getElementById(`tab-${category}`).classList.add('active');
+    });
+});
 
 renderSnippetButtons();
 
