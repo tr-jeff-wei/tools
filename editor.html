@@ -210,13 +210,14 @@ require(["vs/editor/editor.main"],function(){
     editor = monaco.editor.create(
         document.getElementById("editor"),
         {
-            value:"-- 開始撰寫程式...",
+            value:"-- 開始撰寫程式...\n",
             language:"lua",
             theme:"vs-dark",
             automaticLayout:true,
             fontSize:16
         }
     );
+    editor.setPosition({lineNumber:2, column:1});
 
 });
 
@@ -228,6 +229,17 @@ languageSelect.addEventListener("change",()=>{
         editor.getModel(),
         languageSelect.value
     );
+
+    if(languageSelect.value === "javascript"){
+        editor.setValue("// 開始撰寫 JavaScript 程式...\n");  
+    }else if(languageSelect.value === "python"){
+        editor.setValue("# 開始撰寫 Python 程式...\n");   
+    }else if(languageSelect.value === "lua"){
+        editor.setValue("-- 開始撰寫 Lua 程式...\n");
+    }
+
+    // move cursor to next line
+    editor.setPosition({lineNumber:2, column:1});
 
     renderSnippetButtons();
 
@@ -481,19 +493,23 @@ function renderSnippetButtons(){
         btn.dataset.type = type;
         btn.textContent = snippetLabels[type] || type;
 
-        btn.addEventListener("click",()=>{
-            insertAtCursor(langSnippets[type]);
-        });
+        //btn.addEventListener("click",()=>{
+          //  insertAtCursor(langSnippets[type]);
+        //});
 
         // 確定分類
         const category = getCategoryForSnippet(type, lang);
         
         // 添加到 "全部" tab
-        document.getElementById('tab-all').appendChild(btn.cloneNode(true));
+        let clonedBtn = btn.cloneNode(true);
+        clonedBtn.addEventListener("click",()=>{
+            insertAtCursor(langSnippets[type]);
+        });
+        document.getElementById('tab-all').appendChild(clonedBtn);
         
         // 添加到對應分類 tab
         if (category !== 'all') {
-            const clonedBtn = btn.cloneNode(true);
+            clonedBtn = btn.cloneNode(true);
             clonedBtn.addEventListener("click",()=>{
                 insertAtCursor(langSnippets[type]);
             });
